@@ -39,6 +39,10 @@ public class Pessoa {
 	public String getId() {
 		return this.id;
 	}
+	
+	public void setId(String id) {
+		this.id = id;
+	}
 
 	public int getCod() {
 		return this.cod;

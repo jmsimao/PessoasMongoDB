@@ -1,6 +1,5 @@
 package br.com.ifsp.PessoasMongoDB.Controller;
 
-import java.util.ArrayList;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +18,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import br.com.ifsp.PessoasMongoDB.ErrorResponse.ErrorResponse;
 import br.com.ifsp.PessoasMongoDB.ErrorResponse.FoundException;
 import br.com.ifsp.PessoasMongoDB.ErrorResponse.NotFoundException;
+import br.com.ifsp.PessoasMongoDB.ErrorResponse.OtherException;
 import br.com.ifsp.PessoasMongoDB.Model.Pessoa;
 import br.com.ifsp.PessoasMongoDB.Repository.PessoaRepository;
 
@@ -41,8 +41,6 @@ public class PessoaController {
 	@Autowired
 	public PessoaRepository pessoaRepository;
 	
-	//private List<Pessoa> pessoas = new ArrayList<>();
-		
 	public PessoaController() {
 	}
 
@@ -78,6 +76,11 @@ public class PessoaController {
 		}
 		throw new NotFoundException("Não localizadas pessoas pelo sobrenome!","Sobrenome: " + sobrenome);
 	}
+	
+	@GetMapping("/total")
+	public String getContarPessoas() {
+		return "Total de pessoas: " + this.pessoaRepository.count();
+	}
 
 	// Post...
 	@PostMapping("/pessoa")
@@ -105,34 +108,24 @@ public class PessoaController {
 	}
 	*/
 
-	/*
 	// Put...
 	@PutMapping("/{cod}")
 	public ResponseEntity<Pessoa> putPessoa(@PathVariable int cod, @RequestBody Pessoa pessoa) {
-		Pessoa p;
-		p = this.pessoaRepository.save(pessoa);
-		return new ResponseEntity<>(p,
-									HttpStatus.OK)
-				;
-		/*
-		int pessoaIndice = -1;
-		for(Pessoa p: this.pessoas) {
-			if(p.getCod() == cod) {
-				pessoaIndice = this.pessoas.indexOf(p);
-				pessoa.setCod(cod);
-				this.pessoas.set(pessoaIndice, pessoa);
-			}
+		if (!this.pessoaRepository.existsByCod(cod)) {
+			throw new NotFoundException("Código da pessoa não localizado!","Código: " + cod);
 		}
-		if (pessoaIndice == -1) {
-			throw new NotFoundException("Código da pessoa inexistente; dados não alterados!",
-											"Código: " + cod);
+		if (pessoa.getCod() != cod) {
+			throw new OtherException("Código da Pessoa é diferente do código informado na entidade (alteração)!",
+										"Código pesquisa: " + cod + ", Código Pessoa/Entidade para alterar: " + pessoa.getCod() + ".");
 		}
-		return new ResponseEntity<>(pessoa,
-									HttpStatus.ACCEPTED)
-									;
 		
+		Pessoa changePessoa;
+		pessoa.setId(this.pessoaRepository.findByCod(cod).get().getId());
+		changePessoa = this.pessoaRepository.save(pessoa);
+		return new ResponseEntity<>(changePessoa,
+									HttpStatus.OK)
+									;
 	}
-	*/
 
 	// Delete...
 	@DeleteMapping("/{cod}")
@@ -173,6 +166,18 @@ public class PessoaController {
 		
 		return new ResponseEntity<>(errorResponse,
 									HttpStatus.FOUND);
+	}
+	
+	@ExceptionHandler(OtherException.class)
+	private ResponseEntity<ErrorResponse> handlerOtherException(OtherException oe) {
+		ErrorResponse errorResponse = new ErrorResponse(HttpStatus.NOT_ACCEPTABLE.value(),
+														HttpStatus.NOT_ACCEPTABLE.toString(),
+														oe.getMessage(),
+														oe.getErroInfo(),
+														this.getClass().toString()
+														);
+		return new ResponseEntity<>(errorResponse,
+									HttpStatus.NOT_ACCEPTABLE);
 	}
 	
 }
