@@ -50,5 +50,4 @@ public class ErrorResponse {
 		return httpStatusInfo;
 	}
 	
-	
 }
